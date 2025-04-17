@@ -1,0 +1,6 @@
+venv/
+.env
+bot.log
+python_tips.log
+trader_tips.log
+__pycache__
