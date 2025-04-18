@@ -29,6 +29,7 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 bot = Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'))
 python_channel_id = os.getenv('PYTHON_CHANNEL_ID')
 trader_channel_id = os.getenv('TRADER_CHANNEL_ID')
+js_channel_id = os.getenv('JS_CHANNEL_ID')
 owner_id = int(os.getenv('OWNER_ID'))
 
 
@@ -102,6 +103,44 @@ def generate_trader_tip():
         logger.error(f"Error generating trader tip: {e}")
         return None
 
+def generate_js_tip():
+    """Generate a daily JavaScript/TypeScript tip using OpenAI."""
+    try:
+        level = random.choice(["Professional", "Basic", "Advanced"])
+        js_or_ts = random.choice(["JavaScript", "TypeScript"])
+        response = openai.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are a Daily {js_or_ts} Tips channel. "
+                        "Format your response in this exact structure:\n"
+                        "1. Start with the level in bold: *Level: #Basic* or *Level: #Advanced* or *Level: #Professional*\n"
+                        "2. Add a brief explanation of the tip in bold and then the next line\n"
+                        "3. Always include a code example using this exact format:\n"
+                        "```javascript\n"  # or typescript
+                        "// Your code here\n"
+                        "// Add comments with output if needed\n"
+                        "```\n"
+                        "4. Make sure code examples are practical and executable\n"
+                        "5. Use proper formatting and indentation in code examples\n"
+                        "6. Use emojis extensively in the text\n"
+                        "7. Do not repeat the same tip\n"
+                        "8. Include modern features and best practices"
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Give me today's {level} {js_or_ts} tip."
+                }
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"Error generating JS/TS tip: {e}")
+        return None
+
 def escape_markdown(text):
     """Handle Telegram markdown formatting for pre-escaped text."""
     # First unescape any pre-escaped characters
@@ -145,6 +184,21 @@ async def send_trader_tip():
         except Exception as e:
             logger.error(f"Error sending trader tip: {e}")
 
+async def send_js_tip():
+    """Send the generated JavaScript/TypeScript tip to the JS channel."""
+    tip = generate_js_tip()
+    if tip:
+        try:
+            message = escape_markdown(tip)
+            await bot.send_message(
+                chat_id=js_channel_id,
+                text=message,
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+            logger.info("JS/TS tip sent successfully!")
+        except Exception as e:
+            logger.error(f"Error sending JS/TS tip: {e}")
+
 async def test_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the /test command."""
     if update.effective_user.id != owner_id:
@@ -158,8 +212,10 @@ async def test_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         tip = generate_python_tip()
     elif tip_type.lower() == "trader":
         tip = generate_trader_tip()
+    elif tip_type.lower() in ["js", "javascript", "typescript"]:
+        tip = generate_js_tip()
     else:
-        await update.message.reply_text("Please specify 'python' or 'trader' after /test")
+        await update.message.reply_text("Please specify 'python', 'trader', or 'js' after /test")
         return
     
     if tip:
@@ -214,4 +270,4 @@ def main():
     application.run_polling()
 
 if __name__ == "__main__":
-    main()
+    main() 
