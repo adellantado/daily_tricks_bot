@@ -1,7 +1,5 @@
 import logging
-import asyncio
 import os
-import random
 from datetime import datetime, time as dt_time
 
 import openai
@@ -10,9 +8,11 @@ from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackContext, \
     MessageHandler, filters
 from telegram.constants import ParseMode
-import re
 
-# Load environment variables
+from services.python_tips import PythonTips
+from services.js_tips import JsTips
+from services.trader_tips import TraderTips
+
 load_dotenv()
 logging.basicConfig(
     filename='bot.log',
@@ -33,110 +33,23 @@ js_channel_id = os.getenv('JS_CHANNEL_ID')
 owner_id = int(os.getenv('OWNER_ID'))
 
 
-def generate_python_tip():
-    """Generate a daily Python tip using OpenAI."""
+async def generate_python_tip():
     try:
-        level = random.choice(["Professional", "Basic", "Advanced"])
-        response = openai.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a Daily Python Tricks channel. "
-                        "Format your response in this exact structure:\n"
-                        "1. Start with the level in bold: *Level: #Basic* or *Level: #Advanced* or *Level: #Professional*\n"
-                        "2. Add a brief explanation of the tip in bold and then the next line.\n"
-                        "3. Always include a code example using this exact format:\n"
-                        "```python\n"
-                        "# Your code here\n"
-                        "# Add comments with output if needed\n"
-                        "```\n"
-                        "4. Do not add any additional text after the code example\n"
-                        "5. Make sure code examples are practical and executable\n"
-                        "6. Use proper Python formatting and indentation in code examples\n"
-                        "7. Use emojis extensively in the text\n"
-                        "8. Do not repeat the same tip"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"Give me today's {level} Python tip."
-                }
-            ]
-        )
-        return response.choices[0].message.content.strip()
+        return await PythonTips().get_unique_tip()
     except Exception as e:
         logger.error(f"Error generating Python tip: {e}")
         return None
 
-def generate_trader_tip():
-    """Generate a daily trading tip using OpenAI."""
+async def generate_trader_tip():
     try:
-        level = random.choice(["Professional", "Basic", "Advanced"])
-        response = openai.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a Daily Trading Tips channel. "
-                        "Format your response in this exact structure:\n"
-                        "1. Start with the level in bold: *Level: #Basic* or *Level: #Advanced* or *Level: #Professional*\n"
-                        "2. Add a brief explanation of the trading concept, strategy, or tip in bold\n"
-                        "3. Provide practical examples or scenarios\n"
-                        "4. Include relevant trading terminology\n"
-                        "5. Add risk management considerations if applicable\n"
-                        "6. Use emojis extensively in the text\n"
-                        "7. Do not repeat the same tip\n"
-                        "8. Keep it concise and practical"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"Give me today's {level} trading tip."
-                }
-            ]
-        )
-        return response.choices[0].message.content.strip()
+        return await TraderTips().get_unique_tip()
     except Exception as e:
         logger.error(f"Error generating trader tip: {e}")
         return None
 
-def generate_js_tip():
-    """Generate a daily JavaScript/TypeScript tip using OpenAI."""
+async def generate_js_tip():
     try:
-        level = random.choice(["Professional", "Basic", "Advanced"])
-        js_or_ts = random.choice(["JavaScript", "TypeScript"])
-        response = openai.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        f"You are a Daily {js_or_ts} Tips channel. "
-                        "Format your response in this exact structure:\n"
-                        "1. Start with the level in bold: *Level: #Basic* or *Level: #Advanced* or *Level: #Professional*\n"
-                        "2. Add a brief explanation of the tip in bold and then the next line\n"
-                        "3. Always include a code example using this exact format:\n"
-                        "```javascript\n"  # or typescript
-                        "// Your code here\n"
-                        "// Add comments with output if needed\n"
-                        "```\n"
-                        "4. Make sure code examples are practical and executable\n"
-                        "5. Use proper formatting and indentation in code examples\n"
-                        "6. Use emojis extensively in the text\n"
-                        "7. Do not repeat the same tip\n"
-                        "8. Include modern features and best practices"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"Give me today's {level} {js_or_ts} tip."
-                }
-            ]
-        )
-        return response.choices[0].message.content.strip()
+        return await JsTips().get_unique_tip()
     except Exception as e:
         logger.error(f"Error generating JS/TS tip: {e}")
         return None
@@ -155,8 +68,7 @@ def escape_markdown(text):
     return text
 
 async def send_python_tip():
-    """Send the generated Python tip to the Python channel."""
-    tip = generate_python_tip()
+    tip = await generate_python_tip()
     if tip:
         try:
             message = escape_markdown(tip)
@@ -170,8 +82,7 @@ async def send_python_tip():
             logger.error(f"Error sending Python tip: {e}")
 
 async def send_trader_tip():
-    """Send the generated trading tip to the trader channel."""
-    tip = generate_trader_tip()
+    tip = await generate_trader_tip()
     if tip:
         try:
             message = escape_markdown(tip)
@@ -185,8 +96,7 @@ async def send_trader_tip():
             logger.error(f"Error sending trader tip: {e}")
 
 async def send_js_tip():
-    """Send the generated JavaScript/TypeScript tip to the JS channel."""
-    tip = generate_js_tip()
+    tip = await generate_js_tip()
     if tip:
         try:
             message = escape_markdown(tip)
@@ -209,11 +119,11 @@ async def test_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tip_type = context.args[0] if context.args else "python"
     
     if tip_type.lower() == "python":
-        tip = generate_python_tip()
+        tip = await generate_python_tip()
     elif tip_type.lower() == "trader":
-        tip = generate_trader_tip()
+        tip = await generate_trader_tip()
     elif tip_type.lower() in ["js", "javascript", "typescript"]:
-        tip = generate_js_tip()
+        tip = await generate_js_tip()
     else:
         await update.message.reply_text("Please specify 'python', 'trader', or 'js' after /test")
         return

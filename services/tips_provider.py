@@ -8,6 +8,7 @@ import asyncio
 
 from langchain_openai import OpenAIEmbeddings
 # from sklearn.metrics.pairwise import cosine_similarity
+from db import create_tip, create_similar_tip
 
 load_dotenv()
 
@@ -26,7 +27,8 @@ class TipsProvider:
             model_messages: list, 
             similarity_threshold: float = 0.95, 
             max_generation_attempts: int = 5, 
-            dimension: int = 1536
+            dimension: int = 1536,
+            tip_type: str = "general"
         ):
         
         self.index_path = index_path
@@ -35,6 +37,7 @@ class TipsProvider:
         self.similarity_threshold = similarity_threshold
         self.max_generation_attempts = max_generation_attempts
         self.dimension = dimension
+        self.tip_type = tip_type
 
         openai.api_key = os.getenv('OPENAI_API_KEY')
         if not openai.api_key:
@@ -160,15 +163,34 @@ class TipsProvider:
                         self.faiss_index.add(new_tip_embedding.reshape(1, -1))
                         logger.info(f"Added unique tip embedding to FAISS. Index size now {new_index+1}")
                         self._save_faiss_index()
+                        
+                        # Store the tip in the database
+                        stored_tip = create_tip(
+                            faiss_index=new_index,
+                            tip_type=self.tip_type,
+                            text=new_tip_content
+                        )
+                        logger.info(f"Stored new tip in database with ID: {stored_tip.id}")
                     else:
                         logger.error("FAISS index is None, cannot add embedding.")
 
                 except Exception as e:
-                     logger.error(f"Error adding embedding to FAISS index: {e}")
+                     logger.error(f"Error adding embedding to FAISS index or storing tip: {e}")
 
                 return new_tip_content
             else:
                 logger.warning("Duplicate tip detected based on embedding similarity, fetching a new one...")
+                # Store the similar tip in the SimilarTip table
+                try:
+                    stored_similar_tip = create_similar_tip(
+                        faiss_index=new_index,
+                        tip_type=self.tip_type,
+                        text=new_tip_content
+                    )
+                    logger.info(f"Stored similar tip in database with ID: {stored_similar_tip.id}")
+                except Exception as e:
+                    logger.error(f"Error storing similar tip: {e}")
+                
                 await asyncio.sleep(1)
 
         logger.error(f"Failed to find a unique tip after {self.max_generation_attempts} attempts.")
