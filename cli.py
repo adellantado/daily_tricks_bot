@@ -37,9 +37,19 @@ def trader():
     except Exception as e:
         click.echo(f"Error sending trader tip: {e}")
 
+@click.command()
+def blockchain():
+    try:
+        click.echo("Starting to send blockchain tip...")
+        asyncio.run(bot.send_blockchain_tip())
+        click.echo("Blockchain tip sent successfully")
+    except Exception as e:
+        click.echo(f"Error sending blockchain tip: {e}")
+
 cli.add_command(python)
 cli.add_command(js)
 cli.add_command(trader)
+cli.add_command(blockchain)
 
 if __name__ == '__main__':
     cli()

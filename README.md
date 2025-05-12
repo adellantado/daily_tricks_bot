@@ -6,7 +6,7 @@ A Telegram bot that generates and sends daily tips and tricks to specific channe
 
 - **Automated Tip Generation**: Uses OpenAI's GPT-4-turbo to generate daily tips.
 - **Unique Content**: Ensures tips are unique by leveraging FAISS for similarity checks.
-- **Multi-Channel Support**: Sends tips to dedicated Telegram channels for Python, JavaScript/TypeScript, and Trading.
+- **Multi-Channel Support**: Sends tips to dedicated Telegram channels for Python, JavaScript/TypeScript, Blockchain and Trading.
 - **Customizable Levels**: Tips are categorized into Basic, Advanced, and Professional levels.
 
 ## Channels
@@ -14,6 +14,7 @@ A Telegram bot that generates and sends daily tips and tricks to specific channe
 - 🐍 **Python Daily**: Tips and tricks for Python developers.
 - 🐸 **JS Daily**: Insights and best practices for JavaScript/TypeScript.
 - 💸 **Trader Daily**: Strategies and concepts for traders.
+- 🔗 **Blockchain Daily**: Tips and tricks for Blockchain developers.
 
 ## Setup
 
