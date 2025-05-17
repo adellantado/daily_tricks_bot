@@ -12,9 +12,16 @@ A Telegram bot that generates and sends daily tips and tricks to specific channe
 ## Channels
 
 - 🐍 **Python Daily**: Tips and tricks for Python developers.
+https://t.me/python_daily_tricks
+
 - 🐸 **JS Daily**: Insights and best practices for JavaScript/TypeScript.
+https://t.me/javascript_daily_tricks
+
 - 💸 **Trader Daily**: Strategies and concepts for traders.
+https://t.me/trader_daily_tricks
+
 - 🔗 **Blockchain Daily**: Tips and tricks for Blockchain developers.
+https://t.me/blockchain_daily_tricks
 
 ## Setup
 
